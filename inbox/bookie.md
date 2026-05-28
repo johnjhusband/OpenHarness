@@ -23,3 +23,9 @@ Processed 3 transactions. By chain step: step2=2, step5=1. Low-confidence: 1.
 
 ## 2026-05-28 03:41:06
 Processed 3 transactions. By chain step: step2=2, step5=1. Low-confidence: 1.
+
+## 2026-05-28 04:33:31
+Processed 3 transactions(3 from manual drop). By chain step: step2=2, step5=1. Low-confidence: 1.
+
+## 2026-05-28 04:33:31
+QBO posting errors: qbo config load failed: QBO credentials missing required field: client_id

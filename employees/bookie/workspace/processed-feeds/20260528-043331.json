@@ -1,0 +1,23 @@
+[
+  {
+    "id": "LIVE-1",
+    "date": "2026-05-28",
+    "amount": -99.0,
+    "vendor": "OpenAI",
+    "memo": "API"
+  },
+  {
+    "id": "LIVE-2",
+    "date": "2026-05-28",
+    "amount": -2500.0,
+    "vendor": "Unknown Big Vendor",
+    "memo": ""
+  },
+  {
+    "id": "LIVE-3",
+    "date": "2026-05-28",
+    "amount": -49.0,
+    "vendor": "Cloudflare",
+    "memo": ""
+  }
+]

@@ -1,0 +1,32 @@
+[
+  {
+    "tx_id": "LIVE-1",
+    "vendor": "OpenAI",
+    "amount": -99.0,
+    "date": "2026-05-28",
+    "gl_account": "Software & SaaS",
+    "confidence": 0.9,
+    "step": 2,
+    "rationale": "CoA pattern match on 'openai'"
+  },
+  {
+    "tx_id": "LIVE-2",
+    "vendor": "Unknown Big Vendor",
+    "amount": -2500.0,
+    "date": "2026-05-28",
+    "gl_account": "Uncategorized Expense",
+    "confidence": 0.4,
+    "step": 5,
+    "rationale": "no rule matched; default expense bucket [bookie-confidence=low]"
+  },
+  {
+    "tx_id": "LIVE-3",
+    "vendor": "Cloudflare",
+    "amount": -49.0,
+    "date": "2026-05-28",
+    "gl_account": "Cloud Hosting",
+    "confidence": 0.9,
+    "step": 2,
+    "rationale": "CoA pattern match on 'cloudflare'"
+  }
+]

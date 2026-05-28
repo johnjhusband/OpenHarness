@@ -7,3 +7,11 @@ Format per entry: one-line summary, then context, then my recommendation if forc
 ---
 
 _No active escalations._
+
+## 2026-05-28 04:33:31 — Bookie low-confidence on high-value tx LIVE-2 ($2500.00, vendor='Unknown Big Vendor')
+
+Categorized as Uncategorized Expense at chain step 5. Rationale: no rule matched; default expense bucket [bookie-confidence=low]
+
+**Recommendation:** Confirm the GL code or supply a memorized rule for this vendor.
+
+---
