@@ -33,10 +33,9 @@ for e in d.get("employees", []):
     name = e.get("name")
     if not name:
         continue
-    # path is workspace-relative in the template ("employees/bookie") OR an absolute
-    # path from a prior install. Always rewrite to absolute under this $HERE.
-    p_in = e.get("path", f"employees/{name}")
-    e["path"] = os.path.abspath(p_in if os.path.isabs(p_in) else os.path.join(HERE, p_in))
+    # path is always rewritten to absolute under this $HERE, regardless of what
+    # was there before. This prevents stale VPS paths bleeding into laptop installs.
+    e["path"] = os.path.abspath(os.path.join(HERE, "employees", name))
     # python_module is OpenHarness-relative ("../Bookie/src") OR absolute.
     pm_in = e.get("python_module")
     if pm_in:
