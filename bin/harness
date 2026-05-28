@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+"""harness — OpenHarness CLI entry point."""
+import os
+import sys
+from pathlib import Path
+
+# Add src/ to PYTHONPATH so `openharness` is importable without install.
+HERE = Path(__file__).resolve().parent
+SRC = HERE.parent / "src"
+sys.path.insert(0, str(SRC))
+
+from openharness.cli import main
+
+if __name__ == "__main__":
+    sys.exit(main())

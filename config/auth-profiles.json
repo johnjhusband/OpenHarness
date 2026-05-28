@@ -1,0 +1,4 @@
+{
+  "_comment": "Auth profiles for LLM providers and external services. Separate from openharness.json so secrets stay isolated. NEVER commit real secrets here — use environment variables or a secrets manager.",
+  "profiles": {}
+}

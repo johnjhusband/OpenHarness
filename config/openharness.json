@@ -1,0 +1,25 @@
+{
+  "version": "0.1.0",
+  "workspace_root": "/home/john/repos/OpenHarness",
+  "tick_cadence_minutes": 30,
+  "log_level": "info",
+  "owner": {
+    "name": "John Husband",
+    "email": "john@husband.llc"
+  },
+  "chief_of_staff": {
+    "soul_path": "workspace/SOUL.md",
+    "memory_path": "workspace/MEMORY.md",
+    "heartbeat_path": "workspace/HEARTBEAT.md",
+    "agents_path": "workspace/AGENTS.md",
+    "boundaries_path": "workspace/boundaries.md",
+    "escalations_path": "workspace/escalations.md",
+    "user_path": "workspace/USER.md",
+    "style_path": "workspace/STYLE.md",
+    "tools_path": "workspace/TOOLS.md"
+  },
+  "state": {
+    "chat_db": "state/chat.db",
+    "cursor_file": "state/last-tick-cursor.json"
+  }
+}

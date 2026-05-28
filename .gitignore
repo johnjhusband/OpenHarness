@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# State (mostly runtime; chat.db is committed for now to make laptop/origin sync work)
+state/sessions/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Don't commit real secrets — auth-profiles.json is checked in with empty profiles only
+# If you populate it with real credentials, add an override:
+# config/auth-profiles.local.json
