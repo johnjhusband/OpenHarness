@@ -1,6 +1,8 @@
 {
-  "_comment": "External sources OpenHarness discovers at load time. Populate with paths to read-only reference repos (e.g., ~/repos/references/openclaw, ~/repos/references/hermes-agent). See PRD §13.",
-  "skills": [],
+  "_comment": "External sources OpenHarness discovers at load time. See PRD \u00a714.",
+  "skills": [
+    "${OPENHARNESS_ROOT}/employees/bookie/skills"
+  ],
   "mcp_definitions": [],
   "soul_templates": [],
   "vendored_code": []

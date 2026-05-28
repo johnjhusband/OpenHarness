@@ -11,7 +11,16 @@ reference them. Execution requires implementing matching dispatch
 from __future__ import annotations
 from pathlib import Path
 
+import os
 from openharness import config
+
+
+def _expand(path: str) -> str:
+    """Resolve ${OPENHARNESS_ROOT} and env vars in a configured path string."""
+    # Set OPENHARNESS_ROOT to the workspace root for substitution if not in env
+    if "OPENHARNESS_ROOT" not in os.environ:
+        os.environ["OPENHARNESS_ROOT"] = config.workspace_root().as_posix()
+    return os.path.expandvars(os.path.expanduser(path))
 
 
 def discover_skills() -> list[dict]:
@@ -19,7 +28,7 @@ def discover_skills() -> list[dict]:
     out = []
     sources = config.load_external_sources().get("skills", [])
     for src in sources:
-        root = Path(src)
+        root = Path(_expand(src))
         if not root.is_dir():
             continue
         for skill_md in root.glob("*/SKILL.md"):
@@ -36,7 +45,7 @@ def discover_mcp_definitions() -> list[dict]:
     out = []
     sources = config.load_external_sources().get("mcp_definitions", [])
     for src in sources:
-        root = Path(src)
+        root = Path(_expand(src))
         if not root.is_dir():
             continue
         for f in list(root.glob("*.mcp.json")) + list(root.glob("mcp-servers/*.json")):
@@ -53,7 +62,7 @@ def discover_soul_templates() -> list[dict]:
     out = []
     sources = config.load_external_sources().get("soul_templates", [])
     for src in sources:
-        root = Path(src)
+        root = Path(_expand(src))
         if not root.is_dir():
             continue
         for soul_md in root.glob("*/SOUL.md"):
@@ -79,7 +88,7 @@ def verify() -> dict:
     missing = []
     for category in ("skills", "mcp_definitions", "soul_templates"):
         for src in es.get(category, []):
-            if not Path(src).is_dir():
+            if not Path(_expand(src)).is_dir():
                 missing.append(src)
     return {
         "ok": not missing,
