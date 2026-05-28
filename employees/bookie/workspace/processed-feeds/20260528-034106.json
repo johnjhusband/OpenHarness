@@ -1,0 +1,23 @@
+[
+  {
+    "id": "VPS-T1",
+    "date": "2026-05-27",
+    "amount": -79.0,
+    "vendor": "Notion",
+    "memo": "monthly"
+  },
+  {
+    "id": "VPS-T2",
+    "date": "2026-05-27",
+    "amount": -1250.0,
+    "vendor": "Hetzner GmbH",
+    "memo": "VPS invoice"
+  },
+  {
+    "id": "VPS-T3",
+    "date": "2026-05-27",
+    "amount": -19.99,
+    "vendor": "Unknown VPS Vendor",
+    "memo": ""
+  }
+]

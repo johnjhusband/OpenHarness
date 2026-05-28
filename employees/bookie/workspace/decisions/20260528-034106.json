@@ -1,0 +1,29 @@
+[
+  {
+    "tx_id": "VPS-T1",
+    "vendor": "Notion",
+    "amount": -79.0,
+    "gl_account": "Software & SaaS",
+    "confidence": 0.9,
+    "step": 2,
+    "rationale": "CoA pattern match on 'notion'"
+  },
+  {
+    "tx_id": "VPS-T2",
+    "vendor": "Hetzner GmbH",
+    "amount": -1250.0,
+    "gl_account": "Cloud Hosting",
+    "confidence": 0.9,
+    "step": 2,
+    "rationale": "CoA pattern match on 'hetzner'"
+  },
+  {
+    "tx_id": "VPS-T3",
+    "vendor": "Unknown VPS Vendor",
+    "amount": -19.99,
+    "gl_account": "Uncategorized Expense",
+    "confidence": 0.4,
+    "step": 5,
+    "rationale": "no rule matched; default expense bucket [bookie-confidence=low]"
+  }
+]
