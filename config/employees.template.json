@@ -1,0 +1,14 @@
+{
+  "_comment": "Template for employees.json. install.sh copies this to employees.json on a fresh install if employees.json doesn't exist, then patches paths to match the local install directory. Edit this template only when adding/removing employees structurally; the live employees.json holds per-environment paths.",
+  "employees": [
+    {
+      "name": "bookie",
+      "path": "employees/bookie",
+      "installed_at": "2026-05-27T22:52:24",
+      "autonomy_mode": "tiered",
+      "python_module": "../Bookie/src",
+      "python_package": "bookie",
+      "tick_function": "tick"
+    }
+  ]
+}

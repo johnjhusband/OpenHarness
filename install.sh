@@ -16,30 +16,40 @@ chmod +x bin/harness
 echo "==> Initializing state directory..."
 mkdir -p state state/checkpoints state/sessions
 
-echo "==> Updating employees.json paths to match this install location..."
+echo "==> Scaffolding / patching config/employees.json for this install location..."
 python3 - "$HERE" <<'PY'
 import json, os, sys
 HERE = sys.argv[1]
-p = os.path.join(HERE, "config", "employees.json")
-with open(p) as f:
-    d = json.load(f)
+live = os.path.join(HERE, "config", "employees.json")
+template = os.path.join(HERE, "config", "employees.template.json")
+if not os.path.exists(live):
+    with open(template) as f:
+        d = json.load(f)
+    print(f"    Scaffolded {live} from template")
+else:
+    with open(live) as f:
+        d = json.load(f)
 for e in d.get("employees", []):
     name = e.get("name")
     if not name:
         continue
-    e["path"] = os.path.join(HERE, "employees", name)
-    # Try to relocate python_module if it pointed at a now-stale path
-    if e.get("python_module") and not os.path.isdir(e["python_module"]):
-        candidate = os.path.abspath(os.path.join(HERE, "..", name.capitalize(), "src"))
-        if os.path.isdir(candidate):
-            e["python_module"] = candidate
-        else:
-            candidate2 = os.path.abspath(os.path.join(HERE, "..", name, "src"))
-            if os.path.isdir(candidate2):
-                e["python_module"] = candidate2
-with open(p, "w") as f:
+    # path is workspace-relative in the template ("employees/bookie") OR an absolute
+    # path from a prior install. Always rewrite to absolute under this $HERE.
+    p_in = e.get("path", f"employees/{name}")
+    e["path"] = os.path.abspath(p_in if os.path.isabs(p_in) else os.path.join(HERE, p_in))
+    # python_module is OpenHarness-relative ("../Bookie/src") OR absolute.
+    pm_in = e.get("python_module")
+    if pm_in:
+        pm = pm_in if os.path.isabs(pm_in) else os.path.abspath(os.path.join(HERE, pm_in))
+        if not os.path.isdir(pm):
+            # Try sibling clone fallback under $HERE/..
+            candidate = os.path.abspath(os.path.join(HERE, "..", name.capitalize(), "src"))
+            if os.path.isdir(candidate):
+                pm = candidate
+        e["python_module"] = pm
+with open(live, "w") as f:
     json.dump(d, f, indent=2)
-print(f"    Patched paths in {p}")
+print(f"    Wrote {live}")
 PY
 
 echo "==> Running workspace integrity check..."

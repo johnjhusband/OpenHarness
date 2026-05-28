@@ -22,3 +22,9 @@ Thumbs.db
 # Don't commit real secrets — auth-profiles.json is checked in with empty profiles only
 # If you populate it with real credentials, add an override:
 # config/auth-profiles.local.json
+
+# employees.json holds absolute paths that differ per environment (laptop vs VPS).
+# install.sh scaffolds it from the template below on each fresh install, and
+# patches paths to match $HERE. Don't sync via git — would ping-pong between
+# environments.
+config/employees.json
