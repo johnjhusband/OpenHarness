@@ -1,0 +1,23 @@
+[
+  {
+    "id": "FEED-1",
+    "date": "2026-05-27",
+    "amount": -79.0,
+    "vendor": "Notion",
+    "memo": "monthly"
+  },
+  {
+    "id": "FEED-2",
+    "date": "2026-05-27",
+    "amount": -1250.0,
+    "vendor": "Hetzner GmbH",
+    "memo": "cloud server invoice"
+  },
+  {
+    "id": "FEED-3",
+    "date": "2026-05-27",
+    "amount": -42.5,
+    "vendor": "Unknown Coffee LLC",
+    "memo": ""
+  }
+]

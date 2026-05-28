@@ -5,7 +5,10 @@
       "name": "bookie",
       "path": "/home/john/repos/OpenHarness/employees/bookie",
       "installed_at": "2026-05-27T22:52:24",
-      "autonomy_mode": "tiered"
+      "autonomy_mode": "tiered",
+      "python_module": "/home/john/repos/Bookie/src",
+      "python_package": "bookie",
+      "tick_function": "tick"
     }
   ]
 }

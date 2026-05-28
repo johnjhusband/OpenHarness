@@ -1,4 +1,12 @@
 {
-  "_comment": "Auth profiles for LLM providers and external services. Separate from openharness.json so secrets stay isolated. NEVER commit real secrets here — use environment variables or a secrets manager.",
-  "profiles": {}
+  "_comment": "Auth profiles for LLM providers. Secrets stay in env vars (e.g. CLAUDE_CODE_OAUTH_TOKEN). NEVER commit real secrets here.",
+  "default_profile": "claude_code:default",
+  "profiles": {
+    "claude_code:default": {
+      "type": "claude_code_headless",
+      "oauth_token_env": "CLAUDE_CODE_OAUTH_TOKEN",
+      "binary": "claude",
+      "timeout_seconds": 300
+    }
+  }
 }

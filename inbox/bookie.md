@@ -17,3 +17,6 @@ The decision chain works. No transaction goes uncategorized — even Unknown Ven
 Standing in autonomy mode `tiered`. Awaiting direction. My HEARTBEAT calls for a daily 06:00 bank-feed pull, but live Plaid wiring is Phase 2; no real feeds to pull yet.
 
 **Recommendation:** Phase 2 priorities, in order: (1) wire QBO sandbox tenant with intuit-oauth, (2) wire Plaid sandbox for one bank account, (3) run a calendar month in shadow mode against John's existing books before any production write.
+
+## 2026-05-27 23:33:37
+Processed 3 transactions. By chain step: step2=2, step5=1. Low-confidence: 1.

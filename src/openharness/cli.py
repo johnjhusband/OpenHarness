@@ -6,7 +6,7 @@ import sys
 import time
 from pathlib import Path
 
-from openharness import config, employees, extensions, inboxes, policy, restart, state, tick, verify, checkpoint
+from openharness import config, employees, extensions, inboxes, policy, restart, state, tick, verify, checkpoint, providers, daemon
 
 
 def _cmd_restart(args):
@@ -180,6 +180,38 @@ def _cmd_policy(args):
         }, indent=2))
 
 
+def _cmd_provider(args):
+    if args.subcmd == "list":
+        auth_path = Path(config.load()["_root"]) / "config" / "auth-profiles.json"
+        with auth_path.open() as f:
+            data = json.load(f)
+        print(f"Default profile: {data.get('default_profile')}")
+        for name, prof in data.get("profiles", {}).items():
+            print(f"  {name:25s} type={prof.get('type')}")
+        return
+    if args.subcmd == "test":
+        try:
+            prov = providers.load_default_provider()
+        except providers.ProviderError as e:
+            print(f"error: {e}", file=sys.stderr)
+            sys.exit(1)
+        resp = prov.call(
+            system_prompt="You are a test agent. Respond in one short sentence.",
+            user_prompt="Reply with exactly: OpenHarness provider test OK.",
+            timeout=60,
+        )
+        print(f"Response: {resp.text.strip()}")
+        print(f"Cost: ${resp.cost_usd:.4f}  Duration: {resp.duration_seconds:.2f}s")
+
+
+def _cmd_daemon(args):
+    daemon.run(
+        interval_seconds=args.interval,
+        git_sync_enabled=not args.no_git_sync,
+        once=args.once,
+    )
+
+
 def _cmd_checkpoint(args):
     if args.subcmd == "list":
         for c in checkpoint.list_in_flight():
@@ -252,6 +284,18 @@ def build_parser() -> argparse.ArgumentParser:
     p_check.add_argument("--amount", type=float, default=0.0)
     p_check.add_argument("--description", default="")
     sp.set_defaults(func=_cmd_policy)
+
+    sp = sub.add_parser("provider", help="LLM provider management")
+    psub2 = sp.add_subparsers(dest="subcmd", required=True)
+    psub2.add_parser("list")
+    psub2.add_parser("test")
+    sp.set_defaults(func=_cmd_provider)
+
+    sp = sub.add_parser("daemon", help="Run the scheduler / agent loop")
+    sp.add_argument("--interval", type=int, default=60, help="Seconds between scheduler ticks (default 60)")
+    sp.add_argument("--no-git-sync", action="store_true", help="Skip git commit+push after each cycle")
+    sp.add_argument("--once", action="store_true", help="Run a single cycle and exit (for testing)")
+    sp.set_defaults(func=_cmd_daemon)
 
     sp = sub.add_parser("checkpoint", help="Task checkpoints")
     csub = sp.add_subparsers(dest="subcmd", required=True)

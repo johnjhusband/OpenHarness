@@ -383,29 +383,87 @@ After any completed task, the employee may run `harness reflect <task_id>`, whic
 
 This is the harness primitive that Chimera §7.3 (skill synthesis) and §7.7 (reflection) collapse into. v1 declares the API; v1.5 implements checkpointing; v2 implements reflection; v3 considers full skill synthesis.
 
-## 20. Provider model
+## 20. Provider model (v1)
 
-V1: Claude Code is the model. The harness does not abstract the provider.
+OpenHarness abstracts the LLM provider so AI employees can run headlessly. v1 ships one provider:
 
-V2 (deferred): `config/auth-profiles.json` follows the OpenClaw pattern — profiles like `anthropic:default` and `openrouter:default`, with rotation and failover. Circuit breaker pattern (throttle ≥2s + rate ≥5/60s) from Hermes.
+- **`claude_code_headless`** — shells out to `claude -p` (Claude Code's non-interactive mode), authenticated via a long-lived OAuth token from `claude setup-token`. Uses John's Claude subscription; no API key required.
 
-## 21. Run-as-service model (deferred)
+`config/auth-profiles.json` schema:
 
-V1: OpenHarness runs as a Python CLI on the laptop. Chief of Staff is alive only when Claude Code is open.
+```jsonc
+{
+  "default_profile": "claude_code:default",
+  "profiles": {
+    "claude_code:default": {
+      "type": "claude_code_headless",
+      "oauth_token_env": "CLAUDE_CODE_OAUTH_TOKEN",  // env var holding the token
+      "binary": "claude",                              // path to the claude CLI
+      "timeout_seconds": 300
+    }
+  }
+}
+```
 
-V2: `harness daemon` runs on a Hetzner VPS, polls the tick every 30 min, keeps Chief of Staff "alive" between Claude Code sessions. AI employees can post to the inbox at any time; Chief of Staff handles when the daemon ticks; truly urgent items still wait until John opens Claude Code (no push, ever).
+Adding a new provider type is one Python subclass (`Provider` ABC). Future providers (Anthropic API direct, OpenRouter, OpenAI Codex OAuth) plug in without touching employees.
 
-V3 (further deferred): Web UI for John to browse workspace state read-only. **NOT** a PWA, **NOT** a notification surface — purely a read-only file browser with FTS search. If this can be served by `gh` / `git` / a static HTML viewer, we use that instead of building anything.
+### Circuit breaker
+
+Each provider is wrapped in a `CircuitBreaker` that prevents runaway failures:
+
+- **Throttle:** minimum 2 seconds between consecutive failed calls
+- **Rate gate:** ≥5 failures in 60 seconds opens the breaker
+- **Cooldown:** 5 min on first open, exponential up to 30 min
+- **Recovery:** half-open after cooldown; one successful call closes the breaker
+
+Pattern from Hermes Agent v0.13 fallback-provider implementation. When the breaker is open, the affected employee pauses its scheduled work and logs the state to `state/chat.db`. No retry-thrash.
+
+## 21. Headless agent loop (v1)
+
+`src/openharness/agent_loop.py` is the single function every headless tick goes through.
+
+```
+invoke(provider, system_prompt, user_prompt) -> response_text
+```
+
+Single-turn. The system prompt is built from the employee's SOUL + AGENTS + recent MEMORY + relevant inbox. The user prompt is the specific task ("respond to message #42 from CoS", "compose a status summary of the May close").
+
+Multi-turn tool-use and MCP integration are deferred to v2; v1 keeps the loop simple because most employee work (Bookie's categorization, reconciliation) is deterministic Python that the daemon runs *before* the LLM is invoked. The LLM is only needed for narrative work — composing messages to Chief of Staff, reading and responding to CoS replies, judgment calls flagged by the deterministic chain.
+
+## 22. Daemon / scheduler (v1)
+
+`harness daemon` runs an indefinite scheduler loop:
+
+```
+every minute:
+  for each employee in config/employees.json:
+    1. read HEARTBEAT.md, decide if any task is due now
+    2. if due: build employee context, call employee.tick(context)
+    3. if employee returned narrative work needing LLM: invoke agent_loop
+    4. write any outbox messages, MEMORY updates, escalations
+    5. log all actions to state/chat.db
+    6. git commit + push to OpenHarness origin (sync to laptop)
+```
+
+`employees.json` references each employee's Python module so the daemon can `importlib.import_module(emp.python_package)` and call its `tick(context)` function. Employee Python code never imports `claude` or any LLM client directly — it returns data to the daemon, which decides whether to invoke the LLM.
+
+Deployment: laptop or Hetzner VPS. The daemon runs as a systemd `--user` unit. Git pushes sync state back to John's laptop where Claude Code (me as Chief of Staff) reads on session start.
+
+V2 (deferred): web UI for John to browse workspace state read-only. **NOT** a PWA, **NOT** a notification surface — purely a read-only file browser with FTS search. If this can be served by `gh` / `git` / a static HTML viewer, we use that instead of building anything.
 
 ## 22. Phasing
 
 **Phase 1 (MVP — this build):**
 - Workspace scaffold for Chief of Staff (SOUL, MEMORY, HEARTBEAT, AGENTS, STYLE, USER, TOOLS, boundaries, escalations)
 - Employee template (under `employees/_template/`)
-- Python CLI: `harness restart`, `harness tick`, `harness inbox`, `harness send`, `harness employee install/list/set-mode`, `harness verify`, `harness extensions list/verify`, `harness state`, `harness policy check`
+- Python CLI: `harness restart`, `harness tick`, `harness inbox`, `harness send`, `harness employee install/list/set-mode`, `harness verify`, `harness extensions list/verify`, `harness state`, `harness policy check`, `harness provider list/test`, `harness daemon`
 - SQLite + FTS5 state store
 - Policy engine v1 (`policy.check` reading `boundaries.md`)
 - Three autonomy modes selectable per employee
+- **Provider abstraction** (`claude_code_headless` v1; OpenAI Codex OAuth and Anthropic API key are future providers)
+- **Circuit breaker** wrapping every provider call
+- **Single-turn agent loop** (`agent_loop.invoke`)
+- **Daemon scheduler** (`harness daemon`) — runs employees' Python ticks on schedule, invokes LLM only when narrative work is needed, syncs via git push
 - Bookie scaffolded as the first employee
 
 **Phase 1.5:**
