@@ -165,6 +165,48 @@
       "description": "harness preamble subcommand is defined (the context injected by hooks)",
       "path": "${OPENHARNESS_ROOT}/src/openharness/cli.py",
       "needle": "def _cmd_preamble"
+    },
+    {
+      "id": "openharness-working-tree-clean",
+      "type": "command_succeeds",
+      "description": "OpenHarness working tree has no uncommitted tracked changes",
+      "command": "cd ${OPENHARNESS_ROOT} && test -z \"$(git status --porcelain | grep -v '^??')\"",
+      "timeout_seconds": 10
+    },
+    {
+      "id": "openharness-laptop-matches-origin",
+      "type": "command_succeeds",
+      "description": "OpenHarness laptop HEAD matches origin/master",
+      "command": "cd ${OPENHARNESS_ROOT} && git fetch -q origin && test \"$(git rev-parse HEAD)\" = \"$(git rev-parse origin/master)\"",
+      "timeout_seconds": 15
+    },
+    {
+      "id": "bookie-working-tree-clean",
+      "type": "command_succeeds",
+      "description": "Bookie working tree has no uncommitted tracked changes",
+      "command": "cd ${BOOKIE_ROOT} && test -z \"$(git status --porcelain | grep -v '^??')\"",
+      "timeout_seconds": 10
+    },
+    {
+      "id": "bookie-laptop-matches-origin",
+      "type": "command_succeeds",
+      "description": "Bookie laptop HEAD matches origin/master",
+      "command": "cd ${BOOKIE_ROOT} && git fetch -q origin && test \"$(git rev-parse HEAD)\" = \"$(git rev-parse origin/master)\"",
+      "timeout_seconds": 15
+    },
+    {
+      "id": "chat-db-not-tracked",
+      "type": "command_succeeds",
+      "description": "state/chat.db is gitignored (was causing chronic VPS-laptop merge conflicts)",
+      "command": "cd ${OPENHARNESS_ROOT} && test -z \"$(git ls-files state/chat.db)\"",
+      "timeout_seconds": 5
+    },
+    {
+      "id": "tick-cursor-not-tracked",
+      "type": "command_succeeds",
+      "description": "state/last-tick-cursor.json is gitignored",
+      "command": "cd ${OPENHARNESS_ROOT} && test -z \"$(git ls-files state/last-tick-cursor.json)\"",
+      "timeout_seconds": 5
     }
   ]
 }
