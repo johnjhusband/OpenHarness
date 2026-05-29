@@ -8,7 +8,7 @@ from pathlib import Path
 
 from openharness import (config, employees, extensions, inboxes, policy, restart,
                           state, tick, verify, checkpoint, providers, daemon,
-                          reflection, memory, cron, skills, hooks)
+                          reflection, memory, cron, skills, hooks, goal)
 
 
 def _cmd_restart(args):
@@ -205,6 +205,67 @@ def _cmd_daemon(args):
     )
 
 
+def _cmd_goal(args):
+    if args.subcmd == "show":
+        print(goal.read_objective())
+        print()
+        print("=== Criteria status ===")
+        results = goal.verify()
+        if not results:
+            print("(no criteria configured)")
+            return
+        green = sum(1 for r in results if r.status == "green")
+        for r in results:
+            mark = "GREEN" if r.status == "green" else "RED  "
+            print(f"  {mark}  {r.id}: {r.description}")
+            if r.status == "red":
+                print(f"           expected: {r.expected}")
+                print(f"           actual:   {r.actual}")
+        print()
+        print(f"Status: {green}/{len(results)} green")
+        if green < len(results):
+            sys.exit(1)
+        return
+    if args.subcmd == "verify":
+        results = goal.verify()
+        green = sum(1 for r in results if r.status == "green")
+        if not results:
+            print("(no criteria configured)")
+            return
+        for r in results:
+            mark = "OK  " if r.status == "green" else "FAIL"
+            print(f"{mark}  {r.id}: {r.description}")
+            if r.status == "red":
+                print(f"      expected: {r.expected}")
+                print(f"      actual:   {r.actual}")
+        print()
+        print(f"{green}/{len(results)} criteria green")
+        if green < len(results):
+            sys.exit(1)
+        return
+    if args.subcmd == "next":
+        r = goal.next_red()
+        if r is None:
+            print("(all criteria green — objective met)")
+            return
+        print(f"Next red criterion: {r.id}")
+        print(f"  description: {r.description}")
+        print(f"  expected:    {r.expected}")
+        print(f"  actual:      {r.actual}")
+        sys.exit(1)
+    if args.subcmd == "set":
+        goal.write_objective(args.text)
+        print(f"Objective set. Edit criteria at config/objective-criteria.json")
+        return
+    if args.subcmd == "archive":
+        path = goal.archive_objective()
+        if path is None:
+            print("(no active objective to archive)")
+            return
+        print(f"Archived to {path}")
+        return
+
+
 def _cmd_reflect(args):
     result = reflection.reflect(args.employee, since_hours=args.since_hours,
                                  dry_run=args.dry_run)
@@ -386,6 +447,15 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--no-git-sync", action="store_true", help="Skip git commit+push after each cycle")
     sp.add_argument("--once", action="store_true", help="Run a single cycle and exit (for testing)")
     sp.set_defaults(func=_cmd_daemon)
+
+    sp = sub.add_parser("goal", help="Active objective + automated criteria")
+    gsub = sp.add_subparsers(dest="subcmd", required=True)
+    gsub.add_parser("show")
+    gsub.add_parser("verify")
+    gsub.add_parser("next")
+    p_set = gsub.add_parser("set"); p_set.add_argument("text")
+    gsub.add_parser("archive")
+    sp.set_defaults(func=_cmd_goal)
 
     sp = sub.add_parser("reflect", help="Run self-improvement reflection on an employee")
     sp.add_argument("employee")

@@ -44,6 +44,32 @@ def briefing() -> str:
     lines = []
     lines.append("# Chief of Staff briefing\n")
 
+    # 0. Active objective + automated criteria status — read FIRST
+    try:
+        from openharness import goal as goal_mod
+        obj_text = goal_mod.read_objective()
+        lines.append("## Active objective\n")
+        lines.append(obj_text.strip())
+        lines.append("")
+        results = goal_mod.verify()
+        if results:
+            green = sum(1 for r in results if r.status == "green")
+            lines.append(f"**Criteria status: {green}/{len(results)} green**\n")
+            for r in results:
+                mark = "✓" if r.status == "green" else "✗"
+                lines.append(f"- {mark} `{r.id}`: {r.description}")
+                if r.status == "red":
+                    lines.append(f"  - expected: {r.expected}")
+                    lines.append(f"  - actual: {r.actual}")
+            lines.append("")
+            if green < len(results):
+                first_red = next((r for r in results if r.status == "red"), None)
+                lines.append(f"**Next action:** make `{first_red.id}` green.\n")
+        else:
+            lines.append("_(no objective criteria configured — set with `harness goal set`)_\n")
+    except Exception as e:
+        lines.append(f"_(goal status unavailable: {e})_\n")
+
     # 1. Recent escalations
     esc = _safe_read(root / cos["escalations_path"])
     if "_No active escalations._" in esc or esc.strip().endswith("_No active escalations._"):
