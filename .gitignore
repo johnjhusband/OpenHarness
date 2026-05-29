@@ -7,8 +7,13 @@ __pycache__/
 venv/
 .pytest_cache/
 
-# State (mostly runtime; chat.db is committed for now to make laptop/origin sync work)
+# Runtime state — never commit, per-machine
 state/sessions/
+state/chat.db
+state/chat.db-shm
+state/chat.db-wal
+state/last-tick-cursor.json
+state/checkpoints/
 
 # OS
 .DS_Store
