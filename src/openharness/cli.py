@@ -6,7 +6,9 @@ import sys
 import time
 from pathlib import Path
 
-from openharness import config, employees, extensions, inboxes, policy, restart, state, tick, verify, checkpoint, providers, daemon
+from openharness import (config, employees, extensions, inboxes, policy, restart,
+                          state, tick, verify, checkpoint, providers, daemon,
+                          reflection, memory, cron, skills, hooks)
 
 
 def _cmd_restart(args):
@@ -86,15 +88,6 @@ def _cmd_employee(args):
         config.save_employees(emps)
         print(f"Set {args.name} autonomy mode → {args.mode}")
         return
-
-
-def _cmd_memory(args):
-    cfg = config.load()
-    path = Path(cfg["_root"]) / cfg["chief_of_staff"]["memory_path"]
-    stamp = time.strftime("%Y-%m-%d %H:%M:%S")
-    with path.open("a") as f:
-        f.write(f"\n## {stamp}\n\n{args.fact.strip()}\n")
-    print(f"Appended to {path}")
 
 
 def _cmd_state(args):
@@ -212,6 +205,108 @@ def _cmd_daemon(args):
     )
 
 
+def _cmd_reflect(args):
+    result = reflection.reflect(args.employee, since_hours=args.since_hours,
+                                 dry_run=args.dry_run)
+    print(f"Employee: {result['employee']}")
+    print(f"Window:   {result['since_hours']}h")
+    print(f"Reviewed: {result['rows_reviewed']} chat rows, "
+          f"{result['decisions_reviewed']} decisions")
+    print(f"Cost:     ${result['cost_usd']:.4f}  "
+          f"Duration: {result.get('duration_seconds', 0):.2f}s")
+    print(f"Appended to memory: {result['appended_to_memory']}")
+    print()
+    print("=== Findings ===")
+    print(result["findings_text"])
+
+
+def _cmd_memory(args):
+    if args.subcmd == "add":
+        row_id = memory.add(args.employee, args.content,
+                            layer=args.layer, tag=args.tag)
+        print(f"Appended to {args.employee}'s MEMORY.md (chat.db row #{row_id})")
+        return
+    if args.subcmd == "tail":
+        print(memory.tail(args.employee, n=args.n))
+        return
+    if args.subcmd == "search":
+        results = memory.search(args.employee, args.query, limit=args.limit)
+        for r in results:
+            print(f"#{r['id']} [{r['kind']}] {r['sender']}: {r['content'][:150]}")
+        return
+    if args.subcmd == "capacity":
+        cap = memory.capacity(args.employee)
+        print(json.dumps(cap, indent=2))
+        return
+
+
+def _cmd_cron(args):
+    if args.subcmd == "list":
+        for j in cron.list_jobs():
+            print(f"{j['id']:14s} {'on' if j.get('enabled') else 'off':3s}  "
+                  f"{j['schedule']:30s} {j['target']}")
+        return
+    if args.subcmd == "add":
+        kwargs_dict = json.loads(args.args) if args.args else {}
+        j = cron.add(schedule=args.schedule, target=args.target, args=kwargs_dict)
+        print(f"Added cron job {j['id']}")
+        return
+    if args.subcmd == "remove":
+        ok = cron.remove(args.job_id)
+        print("removed" if ok else "not found")
+        sys.exit(0 if ok else 1)
+    if args.subcmd == "enable":
+        ok = cron.enable(args.job_id, True)
+        print("enabled" if ok else "not found")
+        sys.exit(0 if ok else 1)
+    if args.subcmd == "disable":
+        ok = cron.enable(args.job_id, False)
+        print("disabled" if ok else "not found")
+        sys.exit(0 if ok else 1)
+    if args.subcmd == "run":
+        for j in cron.list_jobs():
+            if j["id"] == args.job_id:
+                result = cron.run_job(j)
+                if result.get("ok"):
+                    cron.mark_ran(args.job_id)
+                print(json.dumps(result, indent=2, default=str))
+                return
+        print(f"job not found: {args.job_id}", file=sys.stderr)
+        sys.exit(1)
+    if args.subcmd == "due":
+        for j in cron.due_now():
+            print(f"{j['id']:14s} {j['schedule']:30s} {j['target']}")
+        return
+
+
+def _cmd_skill(args):
+    if args.subcmd == "list":
+        for s in skills.list_skills():
+            fm = s.get("frontmatter") or {}
+            desc = fm.get("description", "")[:80]
+            print(f"{s['name']:30s} {desc}")
+        return
+    if args.subcmd == "show":
+        s = skills.get_skill(args.name)
+        if s is None:
+            print(f"unknown skill: {args.name}", file=sys.stderr); sys.exit(1)
+        print(json.dumps(s, indent=2, default=str))
+        return
+    if args.subcmd == "run":
+        kwargs = json.loads(args.args) if args.args else {}
+        try:
+            result = skills.run(args.name, runtime_key=args.runtime, **kwargs)
+            print(json.dumps(result, indent=2, default=str))
+        except skills.SkillError as e:
+            print(f"error: {e}", file=sys.stderr); sys.exit(1)
+
+
+def _cmd_hooks(args):
+    if args.subcmd == "list":
+        print(json.dumps(hooks.registered(), indent=2))
+        return
+
+
 def _cmd_checkpoint(args):
     if args.subcmd == "list":
         for c in checkpoint.list_in_flight():
@@ -253,11 +348,6 @@ def build_parser() -> argparse.ArgumentParser:
     p_setmode.add_argument("mode", choices=["manual", "tiered", "autonomous"])
     sp.set_defaults(func=_cmd_employee)
 
-    sp = sub.add_parser("memory", help="Append to Chief of Staff MEMORY.md")
-    sp.add_argument("subcmd", choices=["append"])
-    sp.add_argument("fact")
-    sp.set_defaults(func=_cmd_memory)
-
     sp = sub.add_parser("state", help="Browse chat.db state")
     ssub = sp.add_subparsers(dest="subcmd")
     ssub.add_parser("metrics")
@@ -296,6 +386,55 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--no-git-sync", action="store_true", help="Skip git commit+push after each cycle")
     sp.add_argument("--once", action="store_true", help="Run a single cycle and exit (for testing)")
     sp.set_defaults(func=_cmd_daemon)
+
+    sp = sub.add_parser("reflect", help="Run self-improvement reflection on an employee")
+    sp.add_argument("employee")
+    sp.add_argument("--since-hours", type=int, default=168, help="Window in hours (default 168 = 7 days)")
+    sp.add_argument("--dry-run", action="store_true")
+    sp.set_defaults(func=_cmd_reflect)
+
+    sp = sub.add_parser("memory", help="Memory tool: add / tail / search / capacity")
+    msub = sp.add_subparsers(dest="subcmd", required=True)
+    p_add = msub.add_parser("add"); p_add.add_argument("employee")
+    p_add.add_argument("content")
+    p_add.add_argument("--layer", choices=["episodic", "semantic", "procedural"],
+                       default="episodic")
+    p_add.add_argument("--tag")
+    p_tail = msub.add_parser("tail"); p_tail.add_argument("employee")
+    p_tail.add_argument("--n", type=int, default=30)
+    p_search = msub.add_parser("search"); p_search.add_argument("employee")
+    p_search.add_argument("query"); p_search.add_argument("--limit", type=int, default=20)
+    p_cap = msub.add_parser("capacity"); p_cap.add_argument("employee")
+    sp.set_defaults(func=_cmd_memory)
+
+    sp = sub.add_parser("cron", help="First-class scheduled jobs")
+    csub = sp.add_subparsers(dest="subcmd", required=True)
+    csub.add_parser("list")
+    p_add = csub.add_parser("add")
+    p_add.add_argument("--schedule", required=True,
+                       help="e.g. 'every 30m', 'daily 06:00', 'weekly sunday 18:00', 'monthly day 1'")
+    p_add.add_argument("--target", required=True,
+                       help="e.g. 'harness:reflect:bookie' or 'employee:bookie:run_self_check'")
+    p_add.add_argument("--args", help="JSON dict passed to target function")
+    p_rm = csub.add_parser("remove"); p_rm.add_argument("job_id")
+    p_en = csub.add_parser("enable"); p_en.add_argument("job_id")
+    p_dis = csub.add_parser("disable"); p_dis.add_argument("job_id")
+    p_run = csub.add_parser("run"); p_run.add_argument("job_id")
+    csub.add_parser("due")
+    sp.set_defaults(func=_cmd_cron)
+
+    sp = sub.add_parser("skill", help="Skill registry: list / show / run")
+    ssub = sp.add_subparsers(dest="subcmd", required=True)
+    ssub.add_parser("list")
+    p_show = ssub.add_parser("show"); p_show.add_argument("name")
+    p_run = ssub.add_parser("run"); p_run.add_argument("name")
+    p_run.add_argument("--runtime", default="bookie", help="frontmatter metadata key")
+    p_run.add_argument("--args", help="JSON dict of kwargs")
+    sp.set_defaults(func=_cmd_skill)
+
+    sp = sub.add_parser("hooks", help="List registered hook handlers")
+    sp.add_argument("subcmd", choices=["list"])
+    sp.set_defaults(func=_cmd_hooks)
 
     sp = sub.add_parser("checkpoint", help="Task checkpoints")
     csub = sp.add_subparsers(dest="subcmd", required=True)

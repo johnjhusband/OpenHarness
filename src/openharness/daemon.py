@@ -206,6 +206,23 @@ def run(*, interval_seconds: int = 60, git_sync_enabled: bool = True,
     repo_root = Path(config.load()["_root"])
 
     while _running:
+        # 1. Fire any due cron jobs first (reflection etc.)
+        try:
+            from openharness import cron as cron_mod
+            due = cron_mod.due_now()
+            for job in due:
+                state.append(sender="cos", kind="event",
+                             content=f"cron firing job {job['id']} target={job['target']}")
+                result = cron_mod.run_job(job)
+                cron_mod.mark_ran(job["id"])
+                state.append(sender="cos", kind="event",
+                             content=f"cron job {job['id']} result={result.get('ok')}: "
+                                     f"{(result.get('error') or '')[:200]}")
+        except Exception as e:
+            state.append(sender="cos", kind="event",
+                         content=f"cron loop failed (non-fatal): {e}")
+
+        # 2. Run each employee's tick()
         for emp in config.load_employees():
             status = tick_employee(emp, provider)
             print(status)

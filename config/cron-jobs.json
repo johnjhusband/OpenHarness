@@ -1,0 +1,15 @@
+{
+  "jobs": [
+    {
+      "id": "86cf35db270c",
+      "schedule": "weekly sunday 18:00",
+      "target": "harness:reflect:bookie",
+      "args": {
+        "since_hours": 168
+      },
+      "last_run_ts": 0.0,
+      "enabled": true,
+      "created_at": 1780079663.2439053
+    }
+  ]
+}
