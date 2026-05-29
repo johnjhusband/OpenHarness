@@ -79,18 +79,32 @@ def write_criteria(criteria: list[dict]) -> None:
 # ---- criterion checkers -----------------------------------------------------
 
 
+def _expand_path(raw: str) -> Path:
+    """Resolve ${OPENHARNESS_ROOT} / ${BOOKIE_ROOT} / env vars / ~ in a path."""
+    import os
+    if "OPENHARNESS_ROOT" not in os.environ:
+        os.environ["OPENHARNESS_ROOT"] = config.workspace_root().as_posix()
+    if "BOOKIE_ROOT" not in os.environ:
+        # Best-effort: prefer the employee's registered python_module's parent
+        for e in config.load_employees():
+            if e.get("name") == "bookie" and e.get("python_module"):
+                os.environ["BOOKIE_ROOT"] = str(Path(e["python_module"]).parent)
+                break
+    return Path(os.path.expandvars(os.path.expanduser(raw)))
+
+
 def _check_file_exists(spec: dict) -> tuple[bool, str, str]:
-    path = Path(spec["path"]).expanduser()
+    path = _expand_path(spec["path"])
     return path.exists(), "file exists", "exists" if path.exists() else "missing"
 
 
 def _check_not_file_exists(spec: dict) -> tuple[bool, str, str]:
-    path = Path(spec["path"]).expanduser()
+    path = _expand_path(spec["path"])
     return not path.exists(), "file absent", "absent" if not path.exists() else "still exists"
 
 
 def _check_grep_in_file(spec: dict) -> tuple[bool, str, str]:
-    path = Path(spec["path"]).expanduser()
+    path = _expand_path(spec["path"])
     needle = spec["needle"]
     if not path.exists():
         return False, f"file contains {needle!r}", "file missing"
@@ -99,7 +113,7 @@ def _check_grep_in_file(spec: dict) -> tuple[bool, str, str]:
 
 
 def _check_not_grep_in_file(spec: dict) -> tuple[bool, str, str]:
-    path = Path(spec["path"]).expanduser()
+    path = _expand_path(spec["path"])
     needle = spec["needle"]
     if not path.exists():
         return True, f"file does not contain {needle!r}", "file missing (OK)"
@@ -108,8 +122,12 @@ def _check_not_grep_in_file(spec: dict) -> tuple[bool, str, str]:
 
 
 def _check_command_succeeds(spec: dict) -> tuple[bool, str, str]:
-    cmd = spec["command"]
+    import os
+    _expand_path("dummy")  # ensure env vars are populated
+    cmd = os.path.expandvars(spec["command"])
     cwd = spec.get("cwd")
+    if cwd:
+        cwd = str(_expand_path(cwd))
     timeout = int(spec.get("timeout_seconds", 60))
     try:
         result = subprocess.run(

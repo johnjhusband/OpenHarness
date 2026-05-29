@@ -1,132 +1,132 @@
 {
-  "_comment": "Automated checks for the ACTIVE_OBJECTIVE.md. After every commit and before declaring any work done, run `harness goal verify`. If anything is red, the immediate next action is to make it green. Add a new entry every time a new capability lands that Bookie should use.",
+  "_comment": "Automated checks for the ACTIVE_OBJECTIVE.md. Paths use ${OPENHARNESS_ROOT} (workspace root) and ${BOOKIE_ROOT} (Bookie repo root, derived from the employee registry) so the same file works on laptop and VPS. After every commit and before declaring any work done, run `harness goal verify`. If anything is red, the immediate next action is to make it green.",
   "criteria": [
     {
       "id": "openharness-has-memory-module",
       "type": "file_exists",
       "description": "OpenHarness memory module exists",
-      "path": "/home/john/repos/OpenHarness/src/openharness/memory.py"
+      "path": "${OPENHARNESS_ROOT}/src/openharness/memory.py"
     },
     {
       "id": "openharness-has-reflection-module",
       "type": "file_exists",
       "description": "OpenHarness reflection module exists",
-      "path": "/home/john/repos/OpenHarness/src/openharness/reflection.py"
+      "path": "${OPENHARNESS_ROOT}/src/openharness/reflection.py"
     },
     {
       "id": "openharness-has-cron-module",
       "type": "file_exists",
       "description": "OpenHarness cron module exists",
-      "path": "/home/john/repos/OpenHarness/src/openharness/cron.py"
+      "path": "${OPENHARNESS_ROOT}/src/openharness/cron.py"
     },
     {
       "id": "openharness-has-hooks-module",
       "type": "file_exists",
       "description": "OpenHarness hooks module exists",
-      "path": "/home/john/repos/OpenHarness/src/openharness/hooks.py"
+      "path": "${OPENHARNESS_ROOT}/src/openharness/hooks.py"
     },
     {
       "id": "openharness-has-skills-dispatch",
       "type": "file_exists",
       "description": "OpenHarness skills dispatch module exists",
-      "path": "/home/john/repos/OpenHarness/src/openharness/skills.py"
+      "path": "${OPENHARNESS_ROOT}/src/openharness/skills.py"
     },
     {
       "id": "openharness-has-goal-module",
       "type": "file_exists",
       "description": "OpenHarness goal verification module exists",
-      "path": "/home/john/repos/OpenHarness/src/openharness/goal.py"
+      "path": "${OPENHARNESS_ROOT}/src/openharness/goal.py"
     },
     {
       "id": "bookie-uses-openharness-memory",
       "type": "grep_in_file",
       "description": "Bookie tick uses openharness.memory (not just memory_appends)",
-      "path": "/home/john/repos/Bookie/src/bookie/__init__.py",
+      "path": "${BOOKIE_ROOT}/src/bookie/__init__.py",
       "needle": "from openharness import memory"
     },
     {
       "id": "bookie-uses-openharness-skills",
       "type": "grep_in_file",
       "description": "Bookie tick invokes openharness.skills.run dispatch",
-      "path": "/home/john/repos/Bookie/src/bookie/__init__.py",
+      "path": "${BOOKIE_ROOT}/src/bookie/__init__.py",
       "needle": "from openharness import skills"
     },
     {
       "id": "bookie-has-bank-rule-detector",
       "type": "grep_in_file",
       "description": "Bookie has the self-improvement pattern detector for Bank Rule candidates",
-      "path": "/home/john/repos/Bookie/src/bookie/__init__.py",
+      "path": "${BOOKIE_ROOT}/src/bookie/__init__.py",
       "needle": "_detect_bank_rule_candidates"
     },
     {
       "id": "bookie-no-plaid-imports",
       "type": "not_grep_in_file",
       "description": "Bookie tick has no Plaid references (stripped requirement)",
-      "path": "/home/john/repos/Bookie/src/bookie/__init__.py",
+      "path": "${BOOKIE_ROOT}/src/bookie/__init__.py",
       "needle": "plaid"
     },
     {
       "id": "bookie-no-plaid-module",
       "type": "not_file_exists",
       "description": "Bookie plaid_feed.py was deleted (stripped requirement)",
-      "path": "/home/john/repos/Bookie/src/bookie/plaid_feed.py"
+      "path": "${BOOKIE_ROOT}/src/bookie/plaid_feed.py"
     },
     {
       "id": "bookie-no-anomaly-module",
       "type": "not_file_exists",
       "description": "Bookie anomaly.py was deleted (stripped invented scope)",
-      "path": "/home/john/repos/Bookie/src/bookie/anomaly.py"
+      "path": "${BOOKIE_ROOT}/src/bookie/anomaly.py"
     },
     {
       "id": "bookie-no-close-module",
       "type": "not_file_exists",
       "description": "Bookie close.py was deleted (stripped invented scope)",
-      "path": "/home/john/repos/Bookie/src/bookie/close.py"
+      "path": "${BOOKIE_ROOT}/src/bookie/close.py"
     },
     {
       "id": "bookie-browser-surface-exists",
       "type": "file_exists",
       "description": "Bookie browser-automation surface scaffolded",
-      "path": "/home/john/repos/Bookie/src/bookie/browser.py"
+      "path": "${BOOKIE_ROOT}/src/bookie/browser.py"
     },
     {
       "id": "bookie-categorizer-tests-pass",
       "type": "command_succeeds",
       "description": "Bookie categorizer tests pass",
-      "command": "python3 -m pytest /home/john/repos/Bookie/tests/test_categorizer.py -q",
+      "command": "python3 -m pytest ${BOOKIE_ROOT}/tests/test_categorizer.py -q",
       "timeout_seconds": 60
     },
     {
       "id": "harness-verify-clean",
       "type": "command_succeeds",
       "description": "OpenHarness workspace integrity check passes",
-      "command": "/home/john/repos/OpenHarness/bin/harness verify",
+      "command": "${OPENHARNESS_ROOT}/bin/harness verify",
       "timeout_seconds": 30
     },
     {
       "id": "bookie-employee-registered",
       "type": "grep_in_file",
       "description": "Bookie is registered as an employee in OpenHarness",
-      "path": "/home/john/repos/OpenHarness/config/employees.json",
+      "path": "${OPENHARNESS_ROOT}/config/employees.json",
       "needle": "\"bookie\""
     },
     {
       "id": "bookie-skill-discoverable",
       "type": "file_exists",
       "description": "Bookie's categorize-transaction skill is in the discoverable skills dir",
-      "path": "/home/john/repos/OpenHarness/employees/bookie/skills/categorize-transaction/SKILL.md"
+      "path": "${OPENHARNESS_ROOT}/employees/bookie/skills/categorize-transaction/SKILL.md"
     },
     {
       "id": "bookie-requirements-doc-exists",
       "type": "file_exists",
       "description": "Bookie requirements.md exists (traceable scope)",
-      "path": "/home/john/repos/Bookie/prd/requirements.md"
+      "path": "${BOOKIE_ROOT}/prd/requirements.md"
     },
     {
       "id": "weekly-reflection-cron-installed",
       "type": "grep_in_file",
       "description": "Weekly reflection cron job is registered for Bookie",
-      "path": "/home/john/repos/OpenHarness/config/cron-jobs.json",
+      "path": "${OPENHARNESS_ROOT}/config/cron-jobs.json",
       "needle": "harness:reflect:bookie"
     }
   ]
