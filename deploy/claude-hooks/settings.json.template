@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "_comment": "Hooks wire OpenHarness state into every Claude Code session/turn so the structural enforcement applies without needing a separate `harness chat` REPL.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/john/repos/.claude/hooks/session-init.sh",
+            "timeout": 20
+          }
+        ]
+      },
+      {
+        "matcher": "resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/john/repos/.claude/hooks/session-init.sh",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/john/repos/.claude/hooks/prompt-submit.sh",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/john/repos/.claude/hooks/post-bash-commit.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/john/repos/.claude/hooks/stop-check.sh",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}
