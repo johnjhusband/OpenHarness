@@ -205,6 +205,73 @@ def _cmd_daemon(args):
     )
 
 
+def _cmd_preamble(args):
+    """Compact context blob suitable for Claude Code hook injection.
+
+    Used by .claude/hooks/session-init.sh and prompt-submit.sh to surface
+    the OpenHarness state to me at every session start and every turn.
+    """
+    lines: list[str] = []
+    # Active objective + goal status
+    try:
+        from openharness import goal as goal_mod
+        results = goal_mod.verify()
+        if results:
+            green = sum(1 for r in results if r.status == "green")
+            lines.append(f"[OpenHarness goal] {green}/{len(results)} criteria green")
+            reds = [r for r in results if r.status == "red"]
+            if reds:
+                lines.append(f"  RED criteria ({len(reds)}):")
+                for r in reds[:5]:
+                    lines.append(f"    - {r.id}: expected {r.expected}, actual {r.actual}")
+                if len(reds) > 5:
+                    lines.append(f"    ... and {len(reds) - 5} more")
+                lines.append("  Next action: make the first red criterion green.")
+    except Exception as e:
+        lines.append(f"[goal status unavailable: {e}]")
+
+    # Active employee inboxes
+    try:
+        from openharness import inboxes as inboxes_mod
+        ib = inboxes_mod.list_inboxes()
+        if ib:
+            lines.append(f"[OpenHarness inboxes] {len(ib)} employee(s):")
+            for name, info in ib.items():
+                size = info.get("size_bytes", 0)
+                lines.append(f"  - {name}: {size} bytes")
+    except Exception:
+        pass
+
+    # Pending cron
+    try:
+        from openharness import cron as cron_mod
+        due = cron_mod.due_now()
+        if due:
+            lines.append(f"[OpenHarness cron] {len(due)} job(s) due now:")
+            for j in due[:3]:
+                lines.append(f"  - {j['id']}: {j['target']}")
+    except Exception:
+        pass
+
+    # Pending escalations
+    try:
+        cfg = config.load()
+        root = Path(cfg["_root"])
+        esc = root / cfg["chief_of_staff"]["escalations_path"]
+        if esc.exists():
+            text = esc.read_text()
+            non_default = [
+                ln for ln in text.splitlines()
+                if ln.startswith("## ") and "No active escalations" not in ln
+            ]
+            if non_default:
+                lines.append(f"[OpenHarness escalations] {len(non_default)} pending; read {esc.name}")
+    except Exception:
+        pass
+
+    print("\n".join(lines) if lines else "[OpenHarness] all green, no pending work")
+
+
 def _cmd_goal(args):
     if args.subcmd == "show":
         print(goal.read_objective())
@@ -447,6 +514,9 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--no-git-sync", action="store_true", help="Skip git commit+push after each cycle")
     sp.add_argument("--once", action="store_true", help="Run a single cycle and exit (for testing)")
     sp.set_defaults(func=_cmd_daemon)
+
+    sp = sub.add_parser("preamble", help="Compact context blob for Claude Code hook injection")
+    sp.set_defaults(func=_cmd_preamble)
 
     sp = sub.add_parser("goal", help="Active objective + automated criteria")
     gsub = sp.add_subparsers(dest="subcmd", required=True)

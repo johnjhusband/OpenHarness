@@ -128,6 +128,44 @@
       "description": "Weekly reflection cron job is registered for Bookie",
       "path": "${OPENHARNESS_ROOT}/config/cron-jobs.json",
       "needle": "harness:reflect:bookie"
+    },
+    {
+      "id": "claude-code-hooks-installed",
+      "type": "file_exists",
+      "description": "Claude Code hooks settings.json installed (laptop only)",
+      "path": "/home/john/repos/.claude/settings.json"
+    },
+    {
+      "id": "hook-session-init-exists",
+      "type": "file_exists",
+      "description": "SessionStart hook script exists (laptop only)",
+      "path": "/home/john/repos/.claude/hooks/session-init.sh"
+    },
+    {
+      "id": "hook-prompt-submit-exists",
+      "type": "file_exists",
+      "description": "UserPromptSubmit hook script exists (laptop only)",
+      "path": "/home/john/repos/.claude/hooks/prompt-submit.sh"
+    },
+    {
+      "id": "hook-post-bash-commit-exists",
+      "type": "file_exists",
+      "description": "PostToolUse Bash hook for git commit exists (laptop only)",
+      "path": "/home/john/repos/.claude/hooks/post-bash-commit.sh"
+    },
+    {
+      "id": "hook-stop-check-exists",
+      "type": "file_exists",
+      "description": "Stop hook script exists (laptop only)",
+      "path": "/home/john/repos/.claude/hooks/stop-check.sh"
+    },
+    {
+      "id": "preamble-command-works",
+      "type": "command_succeeds",
+      "description": "harness preamble command produces output (the context injected by hooks)",
+      "command": "${OPENHARNESS_ROOT}/bin/harness preamble | head -1 | grep -q OpenHarness",
+      "timeout_seconds": 10
     }
+  ]
   ]
 }
