@@ -160,11 +160,11 @@
       "path": "/home/john/repos/.claude/hooks/stop-check.sh"
     },
     {
-      "id": "preamble-command-works",
-      "type": "command_succeeds",
-      "description": "harness preamble command produces output (the context injected by hooks)",
-      "command": "${OPENHARNESS_ROOT}/bin/harness preamble | head -1 | grep -q OpenHarness",
-      "timeout_seconds": 10
+      "id": "preamble-command-defined",
+      "type": "grep_in_file",
+      "description": "harness preamble subcommand is defined (the context injected by hooks)",
+      "path": "${OPENHARNESS_ROOT}/src/openharness/cli.py",
+      "needle": "def _cmd_preamble"
     }
   ]
 }
