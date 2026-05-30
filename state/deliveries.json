@@ -1,7 +1,6 @@
 {
   "bookie-setup-email": {
-    "source_path": "/home/john/repos/Bookie/SETUP.md",
-    "source_sha": "fddbfbc51965245a5b9d4aba09a40eb1755456483973c4527da8bbd11ae2846f",
-    "delivered_at": 1780111870.1253605
+    "john_steps_signature": "c271228ec2e4f6a51419875449d0ae1baa823ccd06d1ca95ca92bd423001b254",
+    "delivered_at": 1780112035.7522855
   }
 }

@@ -175,15 +175,37 @@ def delivery_is_current(artifact_id: str, source_path: str) -> bool:
     return rec.get("source_sha") == _sha256_file(Path(source_path))
 
 
+def john_steps_signature() -> str:
+    """A hash of only the JOHN-owned step content. The emailed checklist contains
+    John's steps, not my internal build tasks — so freshness tracks his steps,
+    not the whole SETUP.md (which also holds claude-owned build work)."""
+    steps = load_plan().get("steps", [])
+    johns = [s for s in steps if s.get("owner") == "john"]
+    payload = json.dumps(
+        [{"id": s["id"], "title": s["title"], "detail": s.get("detail", ""),
+          "status": s.get("status")} for s in johns],
+        sort_keys=True,
+    )
+    return hashlib.sha256(payload.encode()).hexdigest()
+
+
+def record_email_delivery() -> None:
+    """Record that John's setup email reflects the current John-owned steps."""
+    d = _load_deliveries()
+    d["bookie-setup-email"] = {
+        "john_steps_signature": john_steps_signature(),
+        "delivered_at": time.time(),
+    }
+    _save_deliveries(d)
+
+
 def setup_doc_delivery_current() -> bool:
-    """Predicate for goal criterion: the emailed SETUP checklist reflects current SETUP.md."""
-    root = _bookie_root()
-    if root is None:
-        return True  # can't locate; don't block
-    setup_md = root / "SETUP.md"
-    if not setup_md.exists():
-        return True
-    return delivery_is_current("bookie-setup-email", str(setup_md))
+    """Predicate for goal criterion: the emailed checklist reflects John's CURRENT steps."""
+    d = _load_deliveries()
+    rec = d.get("bookie-setup-email")
+    if rec is None:
+        return False
+    return rec.get("john_steps_signature") == john_steps_signature()
 
 
 # ---------------- doc rendering ----------------
