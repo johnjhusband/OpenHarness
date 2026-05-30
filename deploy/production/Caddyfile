@@ -1,0 +1,19 @@
+qbo.husband.llc {
+	# Auto-TLS via Let's Encrypt (Caddy handles cert issuance + renewal)
+	encode gzip
+
+	# OAuth endpoints → the callback server on localhost:8910
+	handle /qbo-start* {
+		reverse_proxy 127.0.0.1:8910
+	}
+	handle /qbo-callback* {
+		reverse_proxy 127.0.0.1:8910
+	}
+
+	# Everything else → static legal/landing pages
+	handle {
+		root * /var/www/bookie
+		try_files {path} {path}.html {path}/index.html /index.html
+		file_server
+	}
+}
