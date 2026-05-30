@@ -100,7 +100,7 @@
       "id": "bookie-feature-modules-have-tests",
       "type": "command_succeeds",
       "description": "Every Bookie feature module (logic-bearing) has a tests/test_<module>.py",
-      "command": "cd ${BOOKIE_ROOT} && for m in categorizer coa reports qbo browser; do test -f tests/test_$m.py || { echo \"missing test_$m.py\"; exit 1; }; done",
+      "command": "cd ${BOOKIE_ROOT} && for m in categorizer coa reports qbo browser cleanup; do test -f tests/test_$m.py || { echo \"missing test_$m.py\"; exit 1; }; done",
       "timeout_seconds": 15
     },
     {
