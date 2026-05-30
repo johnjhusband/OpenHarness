@@ -151,6 +151,7 @@ def _check_python_predicate(spec: dict) -> tuple[bool, str, str]:
     mod_name, fn_name = target.split(":", 1)
     extra_paths = spec.get("sys_path", [])
     for p in extra_paths:
+        p = str(_expand_path(p))
         if p not in sys.path:
             sys.path.insert(0, p)
     try:

@@ -207,6 +207,26 @@
       "description": "state/last-tick-cursor.json is gitignored",
       "command": "cd ${OPENHARNESS_ROOT} && test -z \"$(git ls-files state/last-tick-cursor.json)\"",
       "timeout_seconds": 5
+    },
+    {
+      "id": "no-claude-work-left-undone",
+      "type": "python_predicate",
+      "description": "No claude-owned, unblocked, incomplete setup step is left undone (catches Claude assigning his own work to John)",
+      "callable": "openharness.plan:no_claude_work_left_undone",
+      "sys_path": ["${OPENHARNESS_ROOT}/src"]
+    },
+    {
+      "id": "setup-doc-delivery-current",
+      "type": "python_predicate",
+      "description": "The emailed setup checklist reflects the current SETUP.md (catches stale derived artifacts)",
+      "callable": "openharness.plan:setup_doc_delivery_current",
+      "sys_path": ["${OPENHARNESS_ROOT}/src"]
+    },
+    {
+      "id": "setup-plan-exists",
+      "type": "file_exists",
+      "description": "Bookie setup-plan.json (single source of truth for setup steps) exists",
+      "path": "${BOOKIE_ROOT}/setup-plan.json"
     }
   ]
 }

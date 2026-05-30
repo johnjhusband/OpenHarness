@@ -8,7 +8,7 @@ from pathlib import Path
 
 from openharness import (config, employees, extensions, inboxes, policy, restart,
                           state, tick, verify, checkpoint, providers, daemon,
-                          reflection, memory, cron, skills, hooks, goal)
+                          reflection, memory, cron, skills, hooks, goal, plan)
 
 
 def _cmd_restart(args):
@@ -205,6 +205,48 @@ def _cmd_daemon(args):
     )
 
 
+def _cmd_plan(args):
+    if args.subcmd == "show":
+        p = plan.load_plan()
+        print(p.get("title", "(plan)"))
+        if p.get("critical_path_note"):
+            print(f"\nCritical path: {p['critical_path_note']}\n")
+        for s in p.get("steps", []):
+            print(f"  [{s.get('owner','?'):8s}] [{s.get('status','todo'):8s}] "
+                  f"Step {s['id']}: {s['title']}")
+        return
+    if args.subcmd == "mine":
+        actionable = plan.claude_actionable()
+        if not actionable:
+            print("No claude-owned, unblocked, incomplete steps. Nothing for me to do right now.")
+            return
+        print("CLAUDE-OWNED work I can do NOW (unblocked, incomplete):")
+        for s in actionable:
+            print(f"  Step {s['id']}: {s['title']}")
+            if s.get("detail"):
+                print(f"    {s['detail']}")
+        return
+    if args.subcmd == "john":
+        actionable = plan.john_actionable()
+        if not actionable:
+            print("Nothing actionable for John right now.")
+            return
+        print("JOHN's actionable steps (his auth/MFA/legal required):")
+        for s in actionable:
+            mins = s.get("estimated_minutes")
+            suffix = f" (~{mins} min)" if mins else ""
+            print(f"  Step {s['id']}: {s['title']}{suffix}")
+        return
+    if args.subcmd == "set-status":
+        ok = plan.set_status(args.step_id, args.status)
+        print("updated" if ok else "step not found")
+        return
+    if args.subcmd == "sync-doc":
+        out = plan.sync_doc()
+        print(f"Wrote {out}")
+        return
+
+
 def _cmd_preamble(args):
     """Compact context blob suitable for Claude Code hook injection.
 
@@ -229,6 +271,21 @@ def _cmd_preamble(args):
                 lines.append("  Next action: make the first red criterion green.")
     except Exception as e:
         lines.append(f"[goal status unavailable: {e}]")
+
+    # Claude-owned actionable work — surface what I should be doing myself
+    try:
+        from openharness import plan as plan_mod
+        mine = plan_mod.claude_actionable()
+        if mine:
+            lines.append(f"[OpenHarness — MY actionable work] {len(mine)} step(s) I should do now:")
+            for s in mine:
+                lines.append(f"  - Step {s['id']}: {s['title']}")
+        johns = plan_mod.john_actionable()
+        if johns:
+            lines.append(f"[OpenHarness — John's actionable steps] "
+                         + ", ".join(f"Step {s['id']} ({s['title']})" for s in johns))
+    except Exception:
+        pass
 
     # Active employee inboxes
     try:
@@ -514,6 +571,17 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--no-git-sync", action="store_true", help="Skip git commit+push after each cycle")
     sp.add_argument("--once", action="store_true", help="Run a single cycle and exit (for testing)")
     sp.set_defaults(func=_cmd_daemon)
+
+    sp = sub.add_parser("plan", help="Task-ownership ledger (who does what)")
+    plsub = sp.add_subparsers(dest="subcmd", required=True)
+    plsub.add_parser("show")
+    plsub.add_parser("mine")
+    plsub.add_parser("john")
+    plsub.add_parser("sync-doc")
+    p_ss = plsub.add_parser("set-status")
+    p_ss.add_argument("step_id")
+    p_ss.add_argument("status", choices=["todo", "done", "deferred"])
+    sp.set_defaults(func=_cmd_plan)
 
     sp = sub.add_parser("preamble", help="Compact context blob for Claude Code hook injection")
     sp.set_defaults(func=_cmd_preamble)
