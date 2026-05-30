@@ -243,3 +243,72 @@ def sync_doc() -> Path:
     out = root / "SETUP.md"
     out.write_text(render_setup_markdown())
     return out
+
+
+# ---------------- THE LOOP: next-action engine ----------------
+# Powers the Stop hook. Computes the single next concrete action, or HANDOFF
+# when there's genuinely nothing left for me to do/research/invent. The hook
+# can ONLY block me from stopping if this names a concrete action — so it can
+# never trap me in an infinite block.
+
+def john_pending_unresearched() -> list[dict]:
+    """John-owned, unblocked, incomplete steps that I have NOT yet researched
+    to completeness this cycle. Researching them is MY work (shrinks his risk
+    of bouncing back). A step is 'researched' when it has researched_at set
+    AND that timestamp is newer than the step's last content change — we
+    approximate by just requiring the researched flag to be present and true.
+    """
+    out = []
+    for s in john_actionable():
+        if not s.get("researched"):
+            out.append(s)
+    return out
+
+
+def next_action() -> dict:
+    """Return the single next concrete action under the operating loop.
+
+    verdict is one of:
+      WORK     — a claude-owned step is actionable now; do it
+      RESEARCH — a john-owned pending step is unresearched; research it so his
+                 handoff is bulletproof
+      HANDOFF  — nothing left for me; the remainder is genuinely John's and is
+                 researched. Allowed to yield.
+    Returns {"verdict", "action", "detail"}.
+    """
+    mine = claude_actionable()
+    if mine:
+        s = mine[0]
+        return {
+            "verdict": "WORK",
+            "action": f"Do Step {s['id']}: {s['title']}",
+            "detail": s.get("detail", ""),
+        }
+    unresearched = john_pending_unresearched()
+    if unresearched:
+        s = unresearched[0]
+        return {
+            "verdict": "RESEARCH",
+            "action": f"Research Step {s['id']} ({s['title']}) against current docs "
+                      f"so John's instructions are exact and complete",
+            "detail": s.get("detail", ""),
+        }
+    return {
+        "verdict": "HANDOFF",
+        "action": "Nothing actionable for me. Remaining work is John's and is researched.",
+        "detail": "",
+    }
+
+
+def mark_researched(step_id: str) -> bool:
+    """Mark a john-owned step as researched-to-completeness this cycle."""
+    p = load_plan()
+    found = False
+    for s in p.get("steps", []):
+        if s["id"] == step_id:
+            s["researched"] = True
+            s["researched_at"] = time.time()
+            found = True
+    if found:
+        plan_path().write_text(json.dumps(p, indent=2))
+    return found

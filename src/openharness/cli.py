@@ -247,6 +247,17 @@ def _cmd_plan(args):
         return
 
 
+def _cmd_loop(args):
+    """Print the current loop verdict + next concrete action. The Stop hook
+    calls this to decide whether to block (keep working) or allow handoff."""
+    na = plan.next_action()
+    print(f"VERDICT: {na['verdict']}")
+    print(f"ACTION: {na['action']}")
+    if na.get("detail"):
+        print(f"DETAIL: {na['detail'][:300]}")
+    return
+
+
 def _cmd_preamble(args):
     """Compact context blob suitable for Claude Code hook injection.
 
@@ -582,6 +593,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_ss.add_argument("step_id")
     p_ss.add_argument("status", choices=["todo", "done", "deferred"])
     sp.set_defaults(func=_cmd_plan)
+
+    sp = sub.add_parser("loop", help="Print the operating-loop verdict + next concrete action")
+    sp.set_defaults(func=_cmd_loop)
 
     sp = sub.add_parser("preamble", help="Compact context blob for Claude Code hook injection")
     sp.set_defaults(func=_cmd_preamble)

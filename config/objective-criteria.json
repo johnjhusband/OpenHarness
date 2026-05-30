@@ -227,6 +227,13 @@
       "type": "file_exists",
       "description": "Bookie setup-plan.json (single source of truth for setup steps) exists",
       "path": "${BOOKIE_ROOT}/setup-plan.json"
+    },
+    {
+      "id": "operating-loop-in-soul",
+      "type": "grep_in_file",
+      "description": "The continuous-work-loop doctrine is encoded in Chief of Staff SOUL.md (loads every session)",
+      "path": "${OPENHARNESS_ROOT}/workspace/SOUL.md",
+      "needle": "THE OPERATING LOOP"
     }
   ]
 }
