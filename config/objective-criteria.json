@@ -1,191 +1,80 @@
 {
-  "_comment": "Automated checks for the ACTIVE_OBJECTIVE.md. Paths use ${OPENHARNESS_ROOT} (workspace root) and ${BOOKIE_ROOT} (Bookie repo root, derived from the employee registry) so the same file works on laptop and VPS. After every commit and before declaring any work done, run `harness goal verify`. If anything is red, the immediate next action is to make it green.",
+  "_comment": "Automated checks for ACTIVE_OBJECTIVE.md (rebuilt 2026-06-01 per John: 'delete it and build what I told you'). Bookie's brain is now Claude (bookie.brain), not a hardcoded rules engine; code is only the QBO connector. Criteria below verify the rebuild and that no scripted-brain modules remain. Paths use ${OPENHARNESS_ROOT} and ${BOOKIE_ROOT}. Run `harness goal verify` after every commit.",
   "criteria": [
     {
-      "id": "openharness-has-memory-module",
+      "id": "bookie-brain-exists",
       "type": "file_exists",
-      "description": "OpenHarness memory module exists",
-      "path": "${OPENHARNESS_ROOT}/src/openharness/memory.py"
+      "description": "Bookie's Claude-driven brain module exists",
+      "path": "${BOOKIE_ROOT}/src/bookie/brain.py"
     },
     {
-      "id": "openharness-has-reflection-module",
-      "type": "file_exists",
-      "description": "OpenHarness reflection module exists",
-      "path": "${OPENHARNESS_ROOT}/src/openharness/reflection.py"
-    },
-    {
-      "id": "openharness-has-cron-module",
-      "type": "file_exists",
-      "description": "OpenHarness cron module exists",
-      "path": "${OPENHARNESS_ROOT}/src/openharness/cron.py"
-    },
-    {
-      "id": "openharness-has-hooks-module",
-      "type": "file_exists",
-      "description": "OpenHarness hooks module exists",
-      "path": "${OPENHARNESS_ROOT}/src/openharness/hooks.py"
-    },
-    {
-      "id": "openharness-has-skills-dispatch",
-      "type": "file_exists",
-      "description": "OpenHarness skills dispatch module exists",
-      "path": "${OPENHARNESS_ROOT}/src/openharness/skills.py"
-    },
-    {
-      "id": "openharness-has-goal-module",
-      "type": "file_exists",
-      "description": "OpenHarness goal verification module exists",
-      "path": "${OPENHARNESS_ROOT}/src/openharness/goal.py"
-    },
-    {
-      "id": "bookie-uses-openharness-memory",
+      "id": "bookie-brain-uses-claude",
       "type": "grep_in_file",
-      "description": "Bookie tick uses openharness.memory (not just memory_appends)",
-      "path": "${BOOKIE_ROOT}/src/bookie/__init__.py",
-      "needle": "from openharness import memory"
+      "description": "Bookie's brain runs Claude (the `claude` CLI) — judgment is the LLM, not code",
+      "path": "${BOOKIE_ROOT}/src/bookie/brain.py",
+      "needle": "claude"
     },
     {
-      "id": "bookie-uses-openharness-skills",
-      "type": "grep_in_file",
-      "description": "Bookie tick invokes openharness.skills.run dispatch",
-      "path": "${BOOKIE_ROOT}/src/bookie/__init__.py",
-      "needle": "from openharness import skills"
-    },
-    {
-      "id": "bookie-has-bank-rule-detector",
-      "type": "grep_in_file",
-      "description": "Bookie has the self-improvement pattern detector for Bank Rule candidates",
-      "path": "${BOOKIE_ROOT}/src/bookie/__init__.py",
-      "needle": "_detect_bank_rule_candidates"
-    },
-    {
-      "id": "bookie-no-plaid-imports",
+      "id": "bookie-brain-has-no-keyword-rules",
       "type": "not_grep_in_file",
-      "description": "Bookie tick has no Plaid references (stripped requirement)",
-      "path": "${BOOKIE_ROOT}/src/bookie/__init__.py",
-      "needle": "plaid"
+      "description": "The brain contains no hardcoded COA_PATTERNS keyword table",
+      "path": "${BOOKIE_ROOT}/src/bookie/brain.py",
+      "needle": "COA_PATTERNS"
+    },
+    {
+      "id": "bookie-qbo-connector-exists",
+      "type": "file_exists",
+      "description": "The QBO connector (the only plumbing kept) exists",
+      "path": "${BOOKIE_ROOT}/src/bookie/qbo.py"
+    },
+    {
+      "id": "bookie-no-categorizer",
+      "type": "not_file_exists",
+      "description": "The scripted categorizer was deleted",
+      "path": "${BOOKIE_ROOT}/src/bookie/categorizer.py"
+    },
+    {
+      "id": "bookie-no-coa-rules",
+      "type": "not_file_exists",
+      "description": "The hardcoded chart-of-accounts keyword rules were deleted",
+      "path": "${BOOKIE_ROOT}/src/bookie/coa.py"
+    },
+    {
+      "id": "bookie-no-cleanup-rules",
+      "type": "not_file_exists",
+      "description": "The scripted cleanup rules were deleted",
+      "path": "${BOOKIE_ROOT}/src/bookie/cleanup.py"
+    },
+    {
+      "id": "bookie-no-browser-stub",
+      "type": "not_file_exists",
+      "description": "The unused browser-automation stub was deleted",
+      "path": "${BOOKIE_ROOT}/src/bookie/browser.py"
     },
     {
       "id": "bookie-no-plaid-module",
       "type": "not_file_exists",
-      "description": "Bookie plaid_feed.py was deleted (stripped requirement)",
+      "description": "No Plaid module (stripped requirement)",
       "path": "${BOOKIE_ROOT}/src/bookie/plaid_feed.py"
-    },
-    {
-      "id": "bookie-no-anomaly-module",
-      "type": "not_file_exists",
-      "description": "Bookie anomaly.py was deleted (stripped invented scope)",
-      "path": "${BOOKIE_ROOT}/src/bookie/anomaly.py"
-    },
-    {
-      "id": "bookie-no-close-module",
-      "type": "not_file_exists",
-      "description": "Bookie close.py was deleted (stripped invented scope)",
-      "path": "${BOOKIE_ROOT}/src/bookie/close.py"
-    },
-    {
-      "id": "bookie-browser-surface-exists",
-      "type": "file_exists",
-      "description": "Bookie browser-automation surface scaffolded",
-      "path": "${BOOKIE_ROOT}/src/bookie/browser.py"
     },
     {
       "id": "bookie-full-test-suite-passes",
       "type": "command_succeeds",
-      "description": "Bookie's FULL test suite passes (test every feature)",
+      "description": "Bookie's full test suite passes",
       "command": "cd ${BOOKIE_ROOT} && python3 -m pytest tests/ -q",
       "timeout_seconds": 120
     },
     {
-      "id": "bookie-feature-modules-have-tests",
-      "type": "command_succeeds",
-      "description": "Every Bookie feature module (logic-bearing) has a tests/test_<module>.py",
-      "command": "cd ${BOOKIE_ROOT} && for m in categorizer coa reports qbo browser cleanup; do test -f tests/test_$m.py || { echo \"missing test_$m.py\"; exit 1; }; done",
-      "timeout_seconds": 15
-    },
-    {
-      "id": "harness-verify-clean",
-      "type": "command_succeeds",
-      "description": "OpenHarness workspace integrity check passes",
-      "command": "${OPENHARNESS_ROOT}/bin/harness verify",
-      "timeout_seconds": 30
-    },
-    {
-      "id": "bookie-employee-registered",
-      "type": "grep_in_file",
-      "description": "Bookie is registered as an employee in OpenHarness",
-      "path": "${OPENHARNESS_ROOT}/config/employees.json",
-      "needle": "\"bookie\""
-    },
-    {
-      "id": "bookie-skill-discoverable",
+      "id": "bookie-brain-has-tests",
       "type": "file_exists",
-      "description": "Bookie's categorize-transaction skill is in the discoverable skills dir",
-      "path": "${OPENHARNESS_ROOT}/employees/bookie/skills/categorize-transaction/SKILL.md"
+      "description": "The Claude brain has behavioral tests (injected runner)",
+      "path": "${BOOKIE_ROOT}/tests/test_brain.py"
     },
     {
-      "id": "bookie-requirements-doc-exists",
+      "id": "bookie-qbo-has-tests",
       "type": "file_exists",
-      "description": "Bookie requirements.md exists (traceable scope)",
-      "path": "${BOOKIE_ROOT}/prd/requirements.md"
-    },
-    {
-      "id": "weekly-reflection-cron-installed",
-      "type": "grep_in_file",
-      "description": "Weekly reflection cron job is registered for Bookie",
-      "path": "${OPENHARNESS_ROOT}/config/cron-jobs.json",
-      "needle": "harness:reflect:bookie"
-    },
-    {
-      "id": "claude-code-hooks-installed",
-      "type": "file_exists",
-      "description": "Claude Code hooks settings.json installed (laptop only)",
-      "path": "/home/john/repos/.claude/settings.json"
-    },
-    {
-      "id": "hook-session-init-exists",
-      "type": "file_exists",
-      "description": "SessionStart hook script exists (laptop only)",
-      "path": "/home/john/repos/.claude/hooks/session-init.sh"
-    },
-    {
-      "id": "hook-prompt-submit-exists",
-      "type": "file_exists",
-      "description": "UserPromptSubmit hook script exists (laptop only)",
-      "path": "/home/john/repos/.claude/hooks/prompt-submit.sh"
-    },
-    {
-      "id": "hook-post-bash-commit-exists",
-      "type": "file_exists",
-      "description": "PostToolUse Bash hook for git commit exists (laptop only)",
-      "path": "/home/john/repos/.claude/hooks/post-bash-commit.sh"
-    },
-    {
-      "id": "hook-stop-check-exists",
-      "type": "file_exists",
-      "description": "Stop hook script exists (laptop only)",
-      "path": "/home/john/repos/.claude/hooks/stop-check.sh"
-    },
-    {
-      "id": "preamble-command-defined",
-      "type": "grep_in_file",
-      "description": "harness preamble subcommand is defined (the context injected by hooks)",
-      "path": "${OPENHARNESS_ROOT}/src/openharness/cli.py",
-      "needle": "def _cmd_preamble"
-    },
-    {
-      "id": "openharness-working-tree-clean",
-      "type": "command_succeeds",
-      "description": "OpenHarness working tree has no uncommitted tracked changes",
-      "command": "cd ${OPENHARNESS_ROOT} && test -z \"$(git status --porcelain | grep -v '^??')\"",
-      "timeout_seconds": 10
-    },
-    {
-      "id": "openharness-laptop-matches-origin",
-      "type": "command_succeeds",
-      "description": "OpenHarness laptop HEAD matches origin/master",
-      "command": "cd ${OPENHARNESS_ROOT} && git fetch -q origin && test \"$(git rev-parse HEAD)\" = \"$(git rev-parse origin/master)\"",
-      "timeout_seconds": 15
+      "description": "The QBO connector has tests",
+      "path": "${BOOKIE_ROOT}/tests/test_qbo.py"
     },
     {
       "id": "bookie-working-tree-clean",
@@ -202,45 +91,30 @@
       "timeout_seconds": 15
     },
     {
-      "id": "chat-db-not-tracked",
+      "id": "openharness-working-tree-clean",
       "type": "command_succeeds",
-      "description": "state/chat.db is gitignored (was causing chronic VPS-laptop merge conflicts)",
-      "command": "cd ${OPENHARNESS_ROOT} && test -z \"$(git ls-files state/chat.db)\"",
-      "timeout_seconds": 5
+      "description": "OpenHarness working tree has no uncommitted tracked changes",
+      "command": "cd ${OPENHARNESS_ROOT} && test -z \"$(git status --porcelain | grep -v '^??')\"",
+      "timeout_seconds": 10
     },
     {
-      "id": "tick-cursor-not-tracked",
+      "id": "openharness-laptop-matches-origin",
       "type": "command_succeeds",
-      "description": "state/last-tick-cursor.json is gitignored",
-      "command": "cd ${OPENHARNESS_ROOT} && test -z \"$(git ls-files state/last-tick-cursor.json)\"",
-      "timeout_seconds": 5
+      "description": "OpenHarness laptop HEAD matches origin/master",
+      "command": "cd ${OPENHARNESS_ROOT} && git fetch -q origin && test \"$(git rev-parse HEAD)\" = \"$(git rev-parse origin/master)\"",
+      "timeout_seconds": 15
     },
     {
-      "id": "no-claude-work-left-undone",
-      "type": "python_predicate",
-      "description": "No claude-owned, unblocked, incomplete setup step is left undone (catches Claude assigning his own work to John)",
-      "callable": "openharness.plan:no_claude_work_left_undone",
-      "sys_path": ["${OPENHARNESS_ROOT}/src"]
-    },
-    {
-      "id": "setup-doc-delivery-current",
-      "type": "python_predicate",
-      "description": "The emailed setup checklist reflects the current SETUP.md (catches stale derived artifacts)",
-      "callable": "openharness.plan:setup_doc_delivery_current",
-      "sys_path": ["${OPENHARNESS_ROOT}/src"]
-    },
-    {
-      "id": "setup-plan-exists",
+      "id": "claude-code-hooks-installed",
       "type": "file_exists",
-      "description": "Bookie setup-plan.json (single source of truth for setup steps) exists",
-      "path": "${BOOKIE_ROOT}/setup-plan.json"
+      "description": "Claude Code hooks settings.json installed (laptop)",
+      "path": "/home/john/repos/.claude/settings.json"
     },
     {
-      "id": "operating-loop-in-soul",
-      "type": "grep_in_file",
-      "description": "The continuous-work-loop doctrine is encoded in Chief of Staff SOUL.md (loads every session)",
-      "path": "${OPENHARNESS_ROOT}/workspace/SOUL.md",
-      "needle": "THE OPERATING LOOP"
+      "id": "anti-lie-hook-exists",
+      "type": "file_exists",
+      "description": "The anti-lie attribution guard hook exists",
+      "path": "/home/john/repos/.claude/hooks/stop-no-lying.sh"
     }
   ]
 }
